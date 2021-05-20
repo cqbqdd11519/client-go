@@ -632,12 +632,16 @@ func (r *Request) Watch(ctx context.Context) (watch.Interface, error) {
 	}
 
 	url := r.URL().String()
+	fmt.Println(url)
 	req, err := http.NewRequest(r.verb, url, r.body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
 	req.Header = r.headers
+	for k := range r.headers {
+		fmt.Printf("%s: %s\n", k, r.headers.Get(k))
+	}
 	client := r.c.Client
 	if client == nil {
 		client = http.DefaultClient
@@ -668,11 +672,22 @@ func (r *Request) Watch(ctx context.Context) (watch.Interface, error) {
 		return nil, fmt.Errorf("for request %s, got status: %v", url, resp.StatusCode)
 	}
 
+	fmt.Println("=================")
+	for k := range resp.Header {
+		fmt.Printf("%s: %s\n", k, resp.Header.Get(k))
+	}
+
 	contentType := resp.Header.Get("Content-Type")
 	mediaType, params, err := mime.ParseMediaType(contentType)
 	if err != nil {
+		fmt.Println(err)
 		klog.V(4).Infof("Unexpected content type from the server: %q: %v", contentType, err)
 	}
+	fmt.Println(mediaType)
+	for k, v := range params {
+		fmt.Printf("%s: %s\n", k, v)
+	}
+	fmt.Println(reflect.TypeOf(r.c.content.Negotiator))
 	objectDecoder, streamingSerializer, framer, err := r.c.content.Negotiator.StreamDecoder(mediaType, params)
 	if err != nil {
 		return nil, err
